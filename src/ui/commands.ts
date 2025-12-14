@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as cp from 'child_process';
 import { getGithubSession } from '../github/auth';
 import { GithubClient } from '../github/client';
 
@@ -42,6 +43,20 @@ export async function openPRCommand() {
   const branchName = pr.head.ref;
 
   vscode.window.showInformationMessage(
-    `Opened PR: ${pr.title} on branch ${branchName}`
+    `Opening PR: ${pr.title} (${prNumber}) on branch ${branchName}`
   );
+
+  if (vscode.workspace.workspaceFolders) {
+    const cwd = vscode.workspace.workspaceFolders[0].uri.fsPath;
+    cp.exec(`git fetch origin ${branchName} && git checkout ${branchName}`, { cwd }, (err, stdout, stderr) => {
+      if (err) {
+        vscode.window.showErrorMessage(`Error checking out branch: ${err.message}`);
+        console.error(stderr);
+        return;
+      }
+      vscode.window.showInformationMessage(`Checked out branch: ${branchName}`);
+    });
+  } else {
+    vscode.window.showErrorMessage('No workspace folder open');
+  }
 }
