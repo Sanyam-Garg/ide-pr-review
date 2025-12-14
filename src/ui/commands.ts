@@ -4,6 +4,9 @@ import { GithubClient } from '../github/client';
 
 interface PullRequest {
   title: string;
+  head: {
+    ref: string;
+  };
 }
 
 export async function openPRCommand() {
@@ -36,7 +39,9 @@ export async function openPRCommand() {
     `/repos/${repo}/pulls/${prNumber}`
   );
 
+  const branchName = pr.head.ref;
+
   vscode.window.showInformationMessage(
-    `Opened PR: ${pr.title}`
+    `Opened PR: ${pr.title} on branch ${branchName}`
   );
 }
