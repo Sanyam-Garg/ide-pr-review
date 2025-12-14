@@ -10,12 +10,12 @@ export class GithubClient {
                 'X-GitHub-Api-Version': '2022-11-28',
                 ...(options.headers || {})
             }
-        })
+        });
 
         if (!res.ok) {
-            throw new Error(`GitHub API error: ${res.status}`)
+            throw new Error(`GitHub API error: ${res.status}`);
         }
 
-        return res.json() as Promise<T>
+        return res.json() as Promise<T>;
     }
 }

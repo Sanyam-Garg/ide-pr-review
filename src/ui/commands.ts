@@ -2,6 +2,8 @@ import * as vscode from 'vscode';
 import * as cp from 'child_process';
 import { getGithubSession } from '../github/auth';
 import { GithubClient } from '../github/client';
+import { PullRequestComment } from '../github/types';
+import { CommentManager } from './comments';
 
 interface PullRequest {
   title: string;
@@ -48,13 +50,27 @@ export async function openPRCommand() {
 
   if (vscode.workspace.workspaceFolders) {
     const cwd = vscode.workspace.workspaceFolders[0].uri.fsPath;
-    cp.exec(`git fetch origin ${branchName} && git checkout ${branchName}`, { cwd }, (err, stdout, stderr) => {
+    cp.exec(`git fetch origin ${branchName} && git checkout ${branchName}`, { cwd }, async (err, stdout, stderr) => {
       if (err) {
         vscode.window.showErrorMessage(`Error checking out branch: ${err.message}`);
         console.error(stderr);
         return;
       }
       vscode.window.showInformationMessage(`Checked out branch: ${branchName}`);
+
+      // Fetch comments
+      try {
+        const comments = await gh.request<PullRequestComment[]>(
+          `/repos/${repo}/pulls/${prNumber}/comments`
+        );
+
+        const commentManager = new CommentManager();
+        commentManager.addComments(comments);
+
+        vscode.window.showInformationMessage(`Loaded ${comments.length} comments.`);
+      } catch (error) {
+        vscode.window.showErrorMessage(`Failed to load comments: ${error}`);
+      }
     });
   } else {
     vscode.window.showErrorMessage('No workspace folder open');
