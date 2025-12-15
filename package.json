@@ -12,6 +12,23 @@
   "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "pr-review",
+          "title": "PR Review",
+          "icon": "$(git-pull-request)"
+        }
+      ]
+    },
+    "views": {
+      "pr-review": [
+        {
+          "id": "pr-review-view",
+          "name": "Review Files"
+        }
+      ]
+    },
     "commands": [
       {
         "command": "ide-pr-review.helloWorld",
@@ -20,10 +37,6 @@
       {
         "command": "idePrReview.openPR",
         "title": "PR Review: Open Pull Request"
-      },
-      {
-        "command": "idePrReview.pickReviewFile",
-        "title": "PR Review: Pick File to Review"
       }
     ]
   },

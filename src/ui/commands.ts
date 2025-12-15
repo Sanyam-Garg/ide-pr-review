@@ -88,46 +88,11 @@ export async function openPRCommand(context: vscode.ExtensionContext) {
         commentManager.addComments(comments);
 
         vscode.window.showInformationMessage(`Loaded ${comments.length} comments.`);
-
-        // Trigger file picker
-        vscode.commands.executeCommand('idePrReview.pickReviewFile');
-
       } catch (error) {
         vscode.window.showErrorMessage(`Failed to load comments: ${error}`);
       }
     });
   } else {
     vscode.window.showErrorMessage('No workspace folder open');
-  }
-}
-
-export async function pickReviewFileCommand() {
-  const session = ReviewSession.getInstance();
-
-  if (!session.comments || session.comments.length === 0) {
-    vscode.window.showInformationMessage('No comments to review.');
-    return;
-  }
-
-  const uniqueFiles = [...new Set(session.comments.map(c => c.path))];
-  const selectedFile = await vscode.window.showQuickPick(uniqueFiles, {
-    placeHolder: 'Select a file to review'
-  });
-
-  if (selectedFile) {
-    if (!session.baseSha || !session.cwd) {
-      vscode.window.showErrorMessage('Session data missing (baseSha or cwd).');
-      return;
-    }
-
-    const leftUri = vscode.Uri.parse(`${GitContentProvider.scheme}:/${selectedFile}?sha=${session.baseSha}`);
-    const rightUri = vscode.Uri.file(`${session.cwd}/${selectedFile}`);
-
-    await vscode.commands.executeCommand(
-      'vscode.diff',
-      leftUri,
-      rightUri,
-      `${path.basename(selectedFile)} (Review)`
-    );
   }
 }

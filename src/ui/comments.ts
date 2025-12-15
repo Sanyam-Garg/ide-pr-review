@@ -40,6 +40,7 @@ export class CommentManager {
 
                 const range = new vscode.Range(start_line - 1, 0, end_line - 1, 0);
                 const thread = this.commentController.createCommentThread(threadUri, range, []);
+                thread.collapsibleState = vscode.CommentThreadCollapsibleState.Expanded;
 
                 thread.comments = [{
                     body: new vscode.MarkdownString(comment.body),
