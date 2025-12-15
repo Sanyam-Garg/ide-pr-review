@@ -1,18 +1,30 @@
 import * as vscode from 'vscode';
 import * as cp from 'child_process';
+import * as path from 'path';
 import { getGithubSession } from '../github/auth';
 import { GithubClient } from '../github/client';
 import { PullRequestComment } from '../github/types';
 import { CommentManager } from './comments';
+import { GitContentProvider } from './contentProvider';
+import { ReviewSession } from './session';
 
 interface PullRequest {
   title: string;
   head: {
     ref: string;
   };
+  base: {
+    ref: string;
+    sha: string;
+  };
 }
 
-export async function openPRCommand() {
+export async function openPRCommand(context: vscode.ExtensionContext) {
+  // Register Content Provider
+  context.subscriptions.push(
+    vscode.workspace.registerTextDocumentContentProvider(GitContentProvider.scheme, new GitContentProvider())
+  );
+
   const url = await vscode.window.showInputBox({
     prompt: 'GitHub Pull Request URL',
     placeHolder: 'https://github.com/owner/repo/pull/123'
@@ -64,15 +76,58 @@ export async function openPRCommand() {
           `/repos/${repo}/pulls/${prNumber}/comments`
         );
 
-        const commentManager = new CommentManager();
+        const session = ReviewSession.getInstance();
+        session.clear();
+        session.baseSha = pr.base.sha;
+        session.comments = comments;
+        session.cwd = cwd;
+        session.currentRepo = repo;
+        session.prNumber = prNumber;
+
+        const commentManager = new CommentManager(pr.base.sha);
         commentManager.addComments(comments);
 
         vscode.window.showInformationMessage(`Loaded ${comments.length} comments.`);
+
+        // Trigger file picker
+        vscode.commands.executeCommand('idePrReview.pickReviewFile');
+
       } catch (error) {
         vscode.window.showErrorMessage(`Failed to load comments: ${error}`);
       }
     });
   } else {
     vscode.window.showErrorMessage('No workspace folder open');
+  }
+}
+
+export async function pickReviewFileCommand() {
+  const session = ReviewSession.getInstance();
+
+  if (!session.comments || session.comments.length === 0) {
+    vscode.window.showInformationMessage('No comments to review.');
+    return;
+  }
+
+  const uniqueFiles = [...new Set(session.comments.map(c => c.path))];
+  const selectedFile = await vscode.window.showQuickPick(uniqueFiles, {
+    placeHolder: 'Select a file to review'
+  });
+
+  if (selectedFile) {
+    if (!session.baseSha || !session.cwd) {
+      vscode.window.showErrorMessage('Session data missing (baseSha or cwd).');
+      return;
+    }
+
+    const leftUri = vscode.Uri.parse(`${GitContentProvider.scheme}:/${selectedFile}?sha=${session.baseSha}`);
+    const rightUri = vscode.Uri.file(`${session.cwd}/${selectedFile}`);
+
+    await vscode.commands.executeCommand(
+      'vscode.diff',
+      leftUri,
+      rightUri,
+      `${path.basename(selectedFile)} (Review)`
+    );
   }
 }

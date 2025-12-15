@@ -4,7 +4,7 @@ import { PullRequestComment } from '../github/types';
 export class CommentManager {
     private commentController: vscode.CommentController;
 
-    constructor() {
+    constructor(private baseSha: string) {
         this.commentController = vscode.comments.createCommentController('ide-pr-review', 'IDE PR Review');
     }
 
@@ -22,6 +22,14 @@ export class CommentManager {
             const uri = vscode.Uri.file(`${vscode.workspace.workspaceFolders![0].uri.fsPath}/${path}`);
 
             for (const comment of fileComments) {
+                const side = comment.side;
+                let threadUri = uri;
+
+                if (side === 'LEFT') {
+                    // LEFT side means base
+                    threadUri = vscode.Uri.parse(`pr-review:/${path}?sha=${this.baseSha}`);
+                }
+
                 var start_line = comment.original_start_line;
                 var end_line = comment.original_line;
 
@@ -31,7 +39,7 @@ export class CommentManager {
                 }
 
                 const range = new vscode.Range(start_line - 1, 0, end_line - 1, 0);
-                const thread = this.commentController.createCommentThread(uri, range, []);
+                const thread = this.commentController.createCommentThread(threadUri, range, []);
 
                 thread.comments = [{
                     body: new vscode.MarkdownString(comment.body),

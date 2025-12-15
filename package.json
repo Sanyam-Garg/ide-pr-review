@@ -20,6 +20,10 @@
       {
         "command": "idePrReview.openPR",
         "title": "PR Review: Open Pull Request"
+      },
+      {
+        "command": "idePrReview.pickReviewFile",
+        "title": "PR Review: Pick File to Review"
       }
     ]
   },
