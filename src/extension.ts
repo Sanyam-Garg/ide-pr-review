@@ -3,6 +3,7 @@
 import * as vscode from 'vscode';
 import { openPRCommand } from './ui/commands';
 import { ReviewTreeProvider } from './ui/treeProvider';
+import { ReviewSession } from './ui/session';
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -30,6 +31,30 @@ export function activate(context: vscode.ExtensionContext) {
 	);
 
 
+
+	context.subscriptions.push(
+		vscode.commands.registerCommand(
+			'idePrReview.reply',
+			(reply: vscode.CommentReply) => {
+				const session = ReviewSession.getInstance();
+				if (session.commentManager) {
+					session.commentManager.reply(reply);
+				}
+			}
+		)
+	);
+
+	context.subscriptions.push(
+		vscode.commands.registerCommand(
+			'idePrReview.create',
+			(reply: vscode.CommentReply) => {
+				const session = ReviewSession.getInstance();
+				if (session.commentManager) {
+					session.commentManager.createThread(reply);
+				}
+			}
+		)
+	);
 
 	const treeProvider = new ReviewTreeProvider();
 	vscode.window.registerTreeDataProvider('pr-review-view', treeProvider);

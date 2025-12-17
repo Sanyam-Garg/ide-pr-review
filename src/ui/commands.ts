@@ -12,6 +12,7 @@ interface PullRequest {
   title: string;
   head: {
     ref: string;
+    sha: string;
   };
   base: {
     ref: string;
@@ -84,7 +85,8 @@ export async function openPRCommand(context: vscode.ExtensionContext) {
         session.currentRepo = repo;
         session.prNumber = prNumber;
 
-        const commentManager = new CommentManager(pr.base.sha);
+        const commentManager = new CommentManager(pr.base.sha, gh, owner, repoName, prNumber, pr.head.sha);
+        session.commentManager = commentManager;
         commentManager.addComments(comments);
 
         vscode.window.showInformationMessage(`Loaded ${comments.length} comments.`);
