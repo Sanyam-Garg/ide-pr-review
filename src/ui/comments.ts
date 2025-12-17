@@ -1,11 +1,25 @@
 import * as vscode from 'vscode';
 import { PullRequestComment } from '../github/types';
+import { GithubClient } from '../github/client';
+import { GitContentProvider } from './contentProvider';
 
-export class CommentManager {
+export class CommentManager implements vscode.CommentingRangeProvider {
     private commentController: vscode.CommentController;
 
-    constructor(private baseSha: string) {
+    constructor(
+        private baseSha: string,
+        private gh: GithubClient,
+        private owner: string,
+        private repo: string,
+        private prNumber: number,
+        private headSha: string
+    ) {
         this.commentController = vscode.comments.createCommentController('ide-pr-review', 'IDE PR Review');
+        this.commentController.commentingRangeProvider = this;
+    }
+
+    provideCommentingRanges(document: vscode.TextDocument, token: vscode.CancellationToken): vscode.Range[] | undefined {
+        return [new vscode.Range(0, 0, document.lineCount - 1, 0)];
     }
 
     addComments(comments: PullRequestComment[]) {
@@ -48,7 +62,8 @@ export class CommentManager {
                     author: {
                         name: comment.user.login,
                         iconPath: vscode.Uri.parse(comment.user.avatar_url)
-                    }
+                    },
+                    contextValue: String(comment.id) // Store GitHub Comment ID
                 }];
             }
         }
@@ -56,5 +71,115 @@ export class CommentManager {
 
     dispose() {
         this.commentController.dispose();
+    }
+
+    async reply(reply: vscode.CommentReply) {
+        const thread = reply.thread;
+        const text = reply.text;
+
+        // Find parent comment ID from the FIRST comment in the thread
+        if (thread.comments.length === 0) {
+            return;
+        }
+
+        const parentComment = thread.comments[0];
+        const parentId = parentComment.contextValue;
+
+        if (!parentId) {
+            vscode.window.showErrorMessage("Cannot reply to a thread without an ID (newly created threads need refresh).");
+            return;
+        }
+
+        try {
+            // POST /repos/{owner}/{repo}/pulls/{pull_number}/comments/{comment_id}/replies
+            const newComment = await this.gh.request<PullRequestComment>(
+                `/repos/${this.owner}/${this.repo}/pulls/${this.prNumber}/comments/${parentId}/replies`,
+                {
+                    method: 'POST',
+                    body: JSON.stringify({ body: text })
+                }
+            );
+
+            const newVsComment: vscode.Comment = {
+                body: new vscode.MarkdownString(newComment.body),
+                mode: vscode.CommentMode.Preview,
+                author: {
+                    name: newComment.user.login,
+                    iconPath: vscode.Uri.parse(newComment.user.avatar_url)
+                },
+                contextValue: String(newComment.id)
+            };
+
+            thread.comments = [...thread.comments, newVsComment];
+
+        } catch (e: any) {
+            vscode.window.showErrorMessage(`Failed to reply: ${e.message}`);
+        }
+    }
+
+    async createThread(reply: vscode.CommentReply) {
+        const thread = reply.thread;
+        const text = reply.text;
+        const uri = thread.uri;
+        const range = thread.range;
+        if (!range) {
+            vscode.window.showErrorMessage("Cannot create thread without a range.");
+            return;
+        }
+
+        // Determine Side and Commit ID
+        let side: 'LEFT' | 'RIGHT' = 'RIGHT';
+        let commit_id = this.headSha;
+        let filePath = uri.fsPath; // Default
+
+        if (uri.scheme === GitContentProvider.scheme) {
+            side = 'LEFT';
+            commit_id = this.baseSha;
+            filePath = uri.path.substring(1); // Remove leading slash
+        } else {
+            // Right side: Local file.
+            // We need the relative path from workspace root.
+            const workspaceRoot = vscode.workspace.workspaceFolders![0].uri.fsPath;
+            filePath = uri.fsPath.replace(workspaceRoot + '/', '');
+        }
+
+        // GitHub API lines are 1-based
+        const line = range.end.line + 1;
+
+        try {
+            // POST /repos/{owner}/{repo}/pulls/{pull_number}/comments
+            const body = {
+                body: text,
+                commit_id: commit_id,
+                path: filePath,
+                side: side,
+                line: line
+            };
+
+            const newComment = await this.gh.request<PullRequestComment>(
+                `/repos/${this.owner}/${this.repo}/pulls/${this.prNumber}/comments`,
+                {
+                    method: 'POST',
+                    body: JSON.stringify(body)
+                }
+            );
+
+            // Update VS Code Thread
+            const newVsComment: vscode.Comment = {
+                body: new vscode.MarkdownString(newComment.body),
+                mode: vscode.CommentMode.Preview,
+                author: {
+                    name: newComment.user.login,
+                    iconPath: vscode.Uri.parse(newComment.user.avatar_url)
+                },
+                contextValue: String(newComment.id)
+            };
+
+            thread.comments = [newVsComment];
+            thread.collapsibleState = vscode.CommentThreadCollapsibleState.Expanded;
+
+        } catch (e: any) {
+            vscode.window.showErrorMessage(`Failed to create thread: ${e.message}`);
+        }
     }
 }

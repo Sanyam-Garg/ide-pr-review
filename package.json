@@ -37,8 +37,32 @@
       {
         "command": "idePrReview.openPR",
         "title": "PR Review: Open Pull Request"
+      },
+      {
+        "command": "idePrReview.reply",
+        "title": "Reply",
+        "icon": "$(reply)"
+      },
+      {
+        "command": "idePrReview.create",
+        "title": "Add Comment",
+        "icon": "$(add)"
       }
-    ]
+    ],
+    "menus": {
+      "comments/commentThread/context": [
+        {
+          "command": "idePrReview.reply",
+          "group": "inline",
+          "when": "!commentThreadIsEmpty"
+        },
+        {
+          "command": "idePrReview.create",
+          "group": "inline",
+          "when": "commentThreadIsEmpty"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",

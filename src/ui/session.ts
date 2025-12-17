@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { PullRequestComment } from '../github/types';
+import { CommentManager } from './comments';
 
 export class ReviewSession {
     private static instance: ReviewSession;
@@ -12,6 +13,7 @@ export class ReviewSession {
     public cwd: string | undefined;
     public currentRepo: string | undefined;
     public prNumber: number | undefined;
+    public commentManager: CommentManager | undefined;
 
     private constructor() { }
 
@@ -23,6 +25,10 @@ export class ReviewSession {
     }
 
     public clear() {
+        if (this.commentManager) {
+            this.commentManager.dispose();
+            this.commentManager = undefined;
+        }
         this.baseSha = undefined;
         this.comments = [];
         this.cwd = undefined;
