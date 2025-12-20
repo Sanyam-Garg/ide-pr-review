@@ -34,6 +34,9 @@ export async function openPRCommand(context: vscode.ExtensionContext) {
     return;
   }
 
+  // Reset context in case previous load failed or new one is starting
+  vscode.commands.executeCommand('setContext', 'idePrReview:prLoaded', false);
+
   const regex = /github\.com\/([^/]+)\/([^/]+)\/pull\/(\d+)/;
   const match = url.match(regex);
 
@@ -79,6 +82,7 @@ export async function openPRCommand(context: vscode.ExtensionContext) {
 
         const session = ReviewSession.getInstance();
         session.clear();
+        session.setClient(gh);
         session.baseSha = pr.base.sha;
         session.comments = comments;
         session.cwd = cwd;
@@ -88,6 +92,12 @@ export async function openPRCommand(context: vscode.ExtensionContext) {
         const commentManager = new CommentManager(pr.base.sha, gh, owner, repoName, prNumber, pr.head.sha);
         session.commentManager = commentManager;
         commentManager.addComments(comments);
+
+        // Context for visibility
+        vscode.commands.executeCommand('setContext', 'idePrReview:prLoaded', true);
+
+        // Open the sidebar
+        vscode.commands.executeCommand('workbench.view.extension.pr-review');
 
         vscode.window.showInformationMessage(`Loaded ${comments.length} comments.`);
       } catch (error) {
