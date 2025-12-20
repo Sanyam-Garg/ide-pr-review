@@ -4,6 +4,7 @@ import * as vscode from 'vscode';
 import { openPRCommand } from './ui/commands';
 import { ReviewTreeProvider } from './ui/treeProvider';
 import { ReviewSession } from './ui/session';
+import { ReviewActionsProvider } from './ui/actionsViewProvider';
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -58,6 +59,11 @@ export function activate(context: vscode.ExtensionContext) {
 
 	const treeProvider = new ReviewTreeProvider();
 	vscode.window.registerTreeDataProvider('pr-review-view', treeProvider);
+
+	const actionsProvider = new ReviewActionsProvider(context.extensionUri);
+	context.subscriptions.push(
+		vscode.window.registerWebviewViewProvider(ReviewActionsProvider.viewType, actionsProvider)
+	);
 }
 
 // This method is called when your extension is deactivated
