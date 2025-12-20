@@ -1,71 +1,38 @@
-# ide-pr-review README
+# IDE PR Review
 
-This is the README for your extension "ide-pr-review". After writing up a brief description, we recommend including the following sections.
+## What this is
 
-## Features
+**IDE PR Review** is a VS Code extension that revolutionizes how you review GitHub Pull Requests. Instead of passively reading code on a webpage or manually fetching branches, this extension allows you to open, review, interact with, and approve PRs entirely within your IDE.
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+It brings the full context of VS Code—IntelliSense, navigation, and git integration—directly into your code review workflow.
 
-For example if there is an image subfolder under your extension project workspace:
+## Why did I make this?
 
-\!\[feature X\]\(images/feature-x.png\)
+Reviewing complex Pull Requests is often more than just looking at diffs. To truly understand the changes, you often need to:
+- Checkout the branch locally.
+- Run the code.
+- Navigate through function definitions and references to see how the new code flows.
+- Verify that tests pass and the logic holds up in the actual environment.
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+Doing this manually involves context switching between the browser and the terminal, which is friction-heavy. I created **IDE PR Review** to bridge this gap, making it easy to review PRs directly from your IDE where you have all your tools at your disposal.
 
-## Requirements
+## How to use it
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+### 1. Open a Pull Request
+Run the command `PR Review: Open Pull Request` from the Command Palette (`Cmd+Shift+P` or `Ctrl+Shift+P`).
+- Paste the full GitHub PR URL (e.g., `https://github.com/owner/repo/pull/123`).
+- The extension will automatically checkout the PR branch and fetch all comments.
 
-## Extension Settings
+### 2. Review Files & Comments
+- A **review tree view** will appear in the "PR Review" container, showing all files modified in the PR.
+- Click on any file to open a diff view.
+- **Comments**: Existing GitHub comments are displayed directly in the editor. You can reply to them or start new threads by clicking on the gutter.
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+### 3. Final Review & Approval
+Once you've finished your review, expanding the **Final Review** view (which appears after a PR is loaded) allows you to:
+- **Write a Summary**: Use the multi-line text box for your final thoughts.
+- **Approve**: Click the "Approve" button to submit a formal GitHub approval.
+- **Request Changes**: Click "Request Changes" to block the PR until issues are resolved.
+- **Assign Reviewers**: Need a second opinion? Enter GitHub usernames (comma-separated) and click "Add Reviewers".
 
-For example:
-
-This extension contributes the following settings:
-
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
-
-## Known Issues
-
-Calling out known issues can help limit users opening duplicate issues against your extension.
-
-## Release Notes
-
-Users appreciate release notes as you update your extension.
-
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
-
----
-
-## Following extension guidelines
-
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
-
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+Everything is synced with GitHub in real-time.
