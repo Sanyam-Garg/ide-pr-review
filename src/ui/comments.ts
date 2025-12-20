@@ -18,8 +18,77 @@ export class CommentManager implements vscode.CommentingRangeProvider {
         this.commentController.commentingRangeProvider = this;
     }
 
+    private files: any[] = [];
+
+    updateFiles(files: any[]) {
+        this.files = files;
+    }
+
     provideCommentingRanges(document: vscode.TextDocument, token: vscode.CancellationToken): vscode.Range[] | undefined {
-        return [new vscode.Range(0, 0, document.lineCount - 1, 0)];
+        if (document.uri.scheme === 'comment') {
+            return undefined;
+        }
+
+        const filePath = this.getRelativePath(document.uri);
+        const file = this.files.find(f => f.filename === filePath);
+
+        if (!file || !file.patch) {
+            // Fallback or no comments allowed if no patch (e.g. binary or huge file)
+            return undefined;
+        }
+
+        const ranges: vscode.Range[] = [];
+        const isBase = document.uri.scheme === GitContentProvider.scheme;
+
+        // Parse Patch
+        const patch = file.patch;
+        const lines = patch.split('\n');
+
+        let currentBaseLine = 0;
+        let currentHeadLine = 0;
+
+        for (const line of lines) {
+            if (line.startsWith('@@')) {
+                // @@ -oldStart,oldLen +newStart,newLen @@
+                const match = line.match(/@@ \-(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
+                if (match) {
+                    currentBaseLine = parseInt(match[1]);
+                    currentHeadLine = parseInt(match[2]);
+                }
+            } else if (line.startsWith('+')) {
+                // Added line
+                if (!isBase) {
+                    ranges.push(new vscode.Range(currentHeadLine - 1, 0, currentHeadLine - 1, 0));
+                }
+                currentHeadLine++;
+            } else if (line.startsWith('-')) {
+                // Deleted line
+                if (isBase) {
+                    ranges.push(new vscode.Range(currentBaseLine - 1, 0, currentBaseLine - 1, 0));
+                }
+                currentBaseLine++;
+            } else if (line.startsWith(' ')) {
+                // Context line
+                if (isBase) {
+                    ranges.push(new vscode.Range(currentBaseLine - 1, 0, currentBaseLine - 1, 0));
+                } else {
+                    ranges.push(new vscode.Range(currentHeadLine - 1, 0, currentHeadLine - 1, 0));
+                }
+                currentBaseLine++;
+                currentHeadLine++;
+            }
+        }
+
+        return ranges;
+    }
+
+    private getRelativePath(uri: vscode.Uri): string {
+        if (uri.scheme === GitContentProvider.scheme) {
+            return uri.path.substring(1);
+        } else {
+            const workspaceRoot = vscode.workspace.workspaceFolders![0].uri.fsPath;
+            return uri.fsPath.replace(workspaceRoot + '/', '');
+        }
     }
 
     addComments(comments: PullRequestComment[]) {
@@ -145,16 +214,23 @@ export class CommentManager implements vscode.CommentingRangeProvider {
 
         // GitHub API lines are 1-based
         const line = range.end.line + 1;
+        const startLine = range.start.line + 1;
+        const isMultiline = startLine !== line;
 
         try {
             // POST /repos/{owner}/{repo}/pulls/{pull_number}/comments
-            const body = {
+            const body: any = {
                 body: text,
                 commit_id: commit_id,
                 path: filePath,
                 side: side,
                 line: line
             };
+
+            if (isMultiline) {
+                body.start_line = startLine;
+                body.start_side = side; // Usually same side
+            }
 
             const newComment = await this.gh.request<PullRequestComment>(
                 `/repos/${this.owner}/${this.repo}/pulls/${this.prNumber}/comments`,

@@ -23,7 +23,7 @@ export class ReviewTreeProvider implements vscode.TreeDataProvider<ReviewNode> {
     getChildren(element?: ReviewNode): Thenable<ReviewNode[]> {
         const session = ReviewSession.getInstance();
 
-        if (!session.comments || session.comments.length === 0) {
+        if (!session.files || session.files.length === 0) {
             return Promise.resolve([]);
         }
 
@@ -31,8 +31,8 @@ export class ReviewTreeProvider implements vscode.TreeDataProvider<ReviewNode> {
             return Promise.resolve(element.children || []);
         } else {
             // Root: Build tree from paths
-            const uniqueFiles = [...new Set(session.comments.map(c => c.path))];
-            const rootNodes = this.buildTree(uniqueFiles);
+            const filePaths = session.files.map(f => f.filename);
+            const rootNodes = this.buildTree(filePaths);
             return Promise.resolve(rootNodes);
         }
     }

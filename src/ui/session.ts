@@ -11,6 +11,7 @@ export class ReviewSession {
 
     public baseSha: string | undefined;
     public comments: PullRequestComment[] = [];
+    public files: any[] = [];
     public cwd: string | undefined;
     public currentRepo: string | undefined;
     public prNumber: number | undefined;
@@ -33,6 +34,7 @@ export class ReviewSession {
         }
         this.baseSha = undefined;
         this.comments = [];
+        this.files = [];
         this.cwd = undefined;
         this.currentRepo = undefined;
         this.prNumber = undefined;

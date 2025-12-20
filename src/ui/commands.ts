@@ -80,17 +80,21 @@ export async function openPRCommand(context: vscode.ExtensionContext) {
           `/repos/${repo}/pulls/${prNumber}/comments`
         );
 
+        const files = await gh.getPullRequestFiles(owner, repoName, prNumber);
+
         const session = ReviewSession.getInstance();
         session.clear();
         session.setClient(gh);
         session.baseSha = pr.base.sha;
         session.comments = comments;
+        session.files = files;
         session.cwd = cwd;
         session.currentRepo = repo;
         session.prNumber = prNumber;
 
         const commentManager = new CommentManager(pr.base.sha, gh, owner, repoName, prNumber, pr.head.sha);
         session.commentManager = commentManager;
+        commentManager.updateFiles(files);
         commentManager.addComments(comments);
 
         // Context for visibility

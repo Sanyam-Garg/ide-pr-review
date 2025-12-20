@@ -15,6 +15,11 @@ export class GithubClient {
         });
     }
 
+    async getPullRequestFiles(owner: string, repo: string, number: number): Promise<any[]> {
+        const res = await this.request<any[]>(`/repos/${owner}/${repo}/pulls/${number}/files`);
+        return res;
+    }
+
     async request<T>(url: string, options: RequestInit = {}): Promise<T> {
         const res = await fetch(`https://api.github.com${url}`, {
             ...options,
