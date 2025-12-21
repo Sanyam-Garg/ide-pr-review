@@ -9,6 +9,7 @@
   "categories": [
     "Other"
   ],
+  "publisher": "SanyamGarg",
   "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
