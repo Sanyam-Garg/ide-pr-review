@@ -46,6 +46,10 @@ export class ReviewActionsProvider implements vscode.WebviewViewProvider {
                         await session.submitReview('COMMENT', data.body);
                         vscode.window.showInformationMessage('Comment submitted!');
                         break;
+                    case 'submit':
+                        await session.submitReview('COMMENT', data.body);
+                        vscode.window.showInformationMessage('Demo comment submitted!');
+                        break;
                     case 'assign-reviewers':
                         const reviewers = data.reviewers.split(',').map((u: string) => u.trim()).filter((u: string) => u.length > 0);
                         if (reviewers.length > 0) {
